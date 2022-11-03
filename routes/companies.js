@@ -74,7 +74,7 @@ router.put("/:code", async function (req, res, next) {
   const { code } = req.params;
   const { name, description } = req.body;
   if (req.body === undefined) throw new BadRequestError();
-
+  //TODO: test for BOTH name/description
   const results = await db.query(
     `UPDATE companies
             SET name = $2,
@@ -84,7 +84,7 @@ router.put("/:code", async function (req, res, next) {
   );
 
   const company = results.rows[0];
-  if (!company) throw new NotFoundError(`Not found: ${id}`);
+  if (!company) throw new NotFoundError(`Not found: ${code}`);
 
   return res.json({ company });
 
@@ -104,8 +104,11 @@ router.delete("/:code", async function (req, res, next) {
 
   const results = await db.query(
     `DELETE FROM companies
-            WHERE code = $1`, [code]
+            WHERE code = $1
+            RETURNING code, name, description; `, [code]
   );
+  const company = results.rows[0];
+  if (!company) throw new NotFoundError(`Not found: ${code}`);
 
   return res.json({ status: "deleted" });
 
