@@ -5,7 +5,7 @@
 const express = require("express");
 const app = express();
 const compRoute = require("./routes/companies");
-const { NotFoundError } = require("./expressError");
+const { NotFoundError, BadRequestError } = require("./expressError");
 
 
 app.use(express.json());
