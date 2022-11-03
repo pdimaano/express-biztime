@@ -42,7 +42,7 @@ router.get("/:code", async function (req, res, next) {
             WHERE comp_code = $1;`,
     [code]
   );
-  const invoices = iResults.rows;
+  const invoices = iResults.rows.map(i => i.id);
 
   const company = cResults.rows[0];
   company.invoices = invoices;
