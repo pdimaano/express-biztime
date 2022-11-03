@@ -4,7 +4,6 @@ const express = require("express");
 const router = new express.Router();
 const { NotFoundError, BadRequestError } = require("../expressError");
 
-
 const db = require("../db.js");
 
 /** Find all companies
@@ -16,7 +15,8 @@ router.get("/", async function (req, res, next) {
   // console.log("Get companies successful")
   const results = await db.query(
     `SELECT code, name
-            FROM companies;`);
+            FROM companies;`
+  );
   const companies = results.rows;
   return res.json({ companies });
 });
@@ -24,22 +24,32 @@ router.get("/", async function (req, res, next) {
 /** Find a single company
  *  - requires query param of "/companies/[company_code]""
  *  - Returns JSON obj of single company
- *    - Ex. {company: {code, name, description}}
+ *    - Ex. {company: {code, name, description, invoices: [id, ...]}}
  *  - If company is not found, return 404 status response.
  */
 router.get("/:code", async function (req, res, next) {
   const { code } = req.params;
-  const results = await db.query(
+  const cResults = await db.query(
     `SELECT code, name, description
             FROM companies
-            WHERE code = $1;`, [code]);
+            WHERE code = $1;`,
+    [code]
+  );
 
-  const company = results.rows[0];
-  console.log(company);
+  const iResults = await db.query(
+    `SELECT id
+            FROM invoices
+            WHERE comp_code = $1;`,
+    [code]
+  );
+  const invoices = iResults.rows;
+
+  const company = cResults.rows[0];
+  company.invoices = invoices;
+  // console.log(company);
   if (!company) throw new NotFoundError(`Not found: ${code}`);
   return res.json({ company });
 });
-
 
 /** Adds a company.
  *
@@ -52,11 +62,12 @@ router.post("/", async function (req, res, next) {
   const { code, name, description } = req.body;
   if (req.body === undefined) throw new BadRequestError();
 
-
   const results = await db.query(
     `INSERT INTO companies (code, name, description)
             VALUES ($1, $2, $3)
-            RETURNING code, name, description;`, [code, name, description]);
+            RETURNING code, name, description;`,
+    [code, name, description]
+  );
   const company = results.rows[0];
   return res.status(201).json({ company });
 });
@@ -80,17 +91,15 @@ router.put("/:code", async function (req, res, next) {
             SET name = $2,
                 description = $3
             WHERE code = $1
-            RETURNING code, name, description;`, [code, name, description]
+            RETURNING code, name, description;`,
+    [code, name, description]
   );
 
   const company = results.rows[0];
   if (!company) throw new NotFoundError(`Not found: ${code}`);
 
   return res.json({ company });
-
 });
-
-
 
 /** Delete an existing company.
  *
@@ -98,20 +107,19 @@ router.put("/:code", async function (req, res, next) {
  * - If company not found, Return 404
  */
 
-
 router.delete("/:code", async function (req, res, next) {
   const { code } = req.params;
 
   const results = await db.query(
     `DELETE FROM companies
             WHERE code = $1
-            RETURNING code, name, description; `, [code]
+            RETURNING code, name, description; `,
+    [code]
   );
   const company = results.rows[0];
   if (!company) throw new NotFoundError(`Not found: ${code}`);
 
   return res.json({ status: "deleted" });
-
 });
 
 module.exports = router;

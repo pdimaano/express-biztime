@@ -37,7 +37,7 @@ router.get("/:id", async function (req, res, next) {
     [id]
   );
   const invoice = iResults.rows[0];
-
+  //* Can also be written as single query
   const code = invoice.comp_code;
 
   const cResults = await db.query(
@@ -77,6 +77,7 @@ router.post("/", async function (req, res, next) {
     [comp_code, amt]
   );
   const invoice = results.rows[0];
+  //* Can do query to see if comp_code does or does not exist
   if (!invoice) throw new BadRequestError();
   return res.status(201).json({ invoice });
 });
@@ -100,7 +101,7 @@ router.patch("/:id", async function (req, res, next) {
   // console.log(amt);
   const results = await db.query(
     `UPDATE invoices
-            SET amt = amt - $2
+            SET amt = $2
             WHERE id = $1
             RETURNING id, comp_code, amt, paid, add_date, paid_date;`,
     [id, amt]
