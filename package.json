@@ -1,0 +1,23 @@
+{
+  "name": "express-biztime",
+  "version": "1.0.0",
+  "description": "express biztime",
+  "main": "app.js",
+  "scripts": {
+    "test": "test",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "biztime"
+  },
+  "keywords": [
+    "express"
+  ],
+  "author": "phil trevor",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.8.0"
+  }
+}
