@@ -2,7 +2,7 @@
   "name": "express-biztime",
   "version": "1.0.0",
   "description": "express biztime",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
     "test": "test",
     "start": "node server.js"
