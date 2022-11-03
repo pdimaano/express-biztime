@@ -39,6 +39,7 @@ router.get("/:id", async function (req, res, next) {
   const invoice = iResults.rows[0];
 
   const code = invoice.comp_code;
+
   const cResults = await db.query(
     `SELECT code, name, description
             FROM companies
@@ -46,6 +47,7 @@ router.get("/:id", async function (req, res, next) {
     [code]
   );
   const company = cResults.rows[0];
+
   invoice.company = company;
   delete invoice.comp_code;
 
@@ -55,73 +57,78 @@ router.get("/:id", async function (req, res, next) {
   return res.json({ invoice });
 });
 
-/** Adds a company.
+/** Adds an invoice.
  *
- * - Requires: JSON like {code, name, description}
- * - Returns JSON obj of new company: {company: {code, name, description}}
+ * - Requires: JSON like {comp_code, amt}
+ * - Returns JSON obj of new invoice: {invoice: {id, comp_code, amt, paid,
+ *                                     add_date, paid_date}}
  *
  */
 
 router.post("/", async function (req, res, next) {
-  const { code, name, description } = req.body;
   if (req.body === undefined) throw new BadRequestError();
+  const { comp_code, amt } = req.body;
+  if (!comp_code || !amt) throw new BadRequestError();
 
   const results = await db.query(
-    `INSERT INTO companies (code, name, description)
-            VALUES ($1, $2, $3)
-            RETURNING code, name, description;`,
-    [code, name, description]
+    `INSERT INTO invoices (comp_code, amt)
+            VALUES ($1, $2)
+            RETURNING id, comp_code, amt, paid, add_date, paid_date;`,
+    [comp_code, amt]
   );
-  const company = results.rows[0];
-  return res.status(201).json({ company });
+  const invoice = results.rows[0];
+  if (!invoice) throw new BadRequestError();
+  return res.status(201).json({ invoice });
 });
 
 /**
- * Update an existing company.
+ *  Update an existing invoice.
  *
- * - requires param of "/companies/[company_code]""
- * - Requires JSON like: {name, description}
- * - Returns updated object as JSON like: {company: {code, name, description}}
+ * - requires param of "/invoices/[id]""
+ * - Requires JSON like: {amt}
+ * - Returns updated object as JSON like: {invoice: {id, comp_code, amt,
+ *                                         paid, add_date, paid_date}}
+ * - If invoice is not found, return 404 error.
  *
  */
 
-router.put("/:code", async function (req, res, next) {
-  const { code } = req.params;
-  const { name, description } = req.body;
+router.patch("/:id", async function (req, res, next) {
   if (req.body === undefined) throw new BadRequestError();
-  //TODO: test for BOTH name/description
+  const { id } = req.params;
+  const { amt } = req.body;
+  if (!Number(amt)) throw new BadRequestError();
+  // console.log(amt);
   const results = await db.query(
-    `UPDATE companies
-            SET name = $2,
-                description = $3
-            WHERE code = $1
-            RETURNING code, name, description;`,
-    [code, name, description]
+    `UPDATE invoices
+            SET amt = amt - $2
+            WHERE id = $1
+            RETURNING id, comp_code, amt, paid, add_date, paid_date;`,
+    [id, amt]
   );
 
-  const company = results.rows[0];
-  if (!company) throw new NotFoundError(`Not found: ${code}`);
+  const invoice = results.rows[0];
+  if (!invoice) throw new NotFoundError(`Not found: ${id}`);
 
-  return res.json({ company });
+  return res.json({ invoice });
 });
 
-/** Delete an existing company.
+/** Delete an existing invoice.
  *
- * - requires param of "/companies/[company_code]"
+ * - requires param of "/invoices/[id]"
  * - If company not found, Return 404
  */
 
-router.delete("/:code", async function (req, res, next) {
-  const { code } = req.params;
+router.delete("/:id", async function (req, res, next) {
+  const { id } = req.params;
 
   const results = await db.query(
-    `DELETE FROM companies
-            WHERE code = $1
-            RETURNING code, name, description; `,
-    [code]
+    `DELETE FROM invoices
+            WHERE id = $1
+            RETURNING id, comp_code;`,
+    [id]
   );
-  const company = results.rows[0];
-  if (!company) throw new NotFoundError(`Not found: ${code}`);
+  const invoice = results.rows[0];
+  if (!invoice) throw new NotFoundError(`Not found: ${id}`);
 
   return res.json({ status: "deleted" });
 });
